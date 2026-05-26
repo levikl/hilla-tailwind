@@ -1,10 +1,19 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm, useFormPart } from "@vaadin/hilla-react-form";
 import { RuleService } from "Frontend/generated/endpoints";
+import type MediaRule from "Frontend/generated/com/example/models/MediaRule";
 import MediaRuleModel from "Frontend/generated/com/example/models/MediaRuleModel";
 
 export default function RuleEditor() {
+  const [rules, setRules] = useState<MediaRule[]>([]);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+
+  async function loadRules() {
+    const result = await RuleService.getRules();
+    setRules(result.filter((r): r is MediaRule => r != null));
+  }
+
+  useEffect(() => { loadRules(); }, []);
 
   const { field, model, submit, reset } = useForm(MediaRuleModel, {
     onSubmit: async (rule) => {
@@ -12,6 +21,8 @@ export default function RuleEditor() {
       try {
         await RuleService.saveRule(rule);
         setSaveStatus("saved");
+        reset();
+        await loadRules();
         setTimeout(() => setSaveStatus("idle"), 3000);
       } catch {
         setSaveStatus("error");
@@ -22,21 +33,20 @@ export default function RuleEditor() {
   const nameState = useFormPart(model.name);
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg">
-        <div className="mb-8">
+    <div className="min-h-screen bg-slate-950 p-8">
+      <div className="max-w-2xl mx-auto space-y-8">
+
+        <div>
           <a href="/" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">
             ← Back
           </a>
           <h1 className="mt-4 text-2xl font-bold text-slate-100">Rule Editor</h1>
-          <p className="text-slate-400 text-sm mt-1">Define a new media sync rule</p>
+          <p className="text-slate-400 text-sm mt-1">Define media sync rules</p>
         </div>
 
+        {/* Form */}
         <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            submit();
-          }}
+          onSubmit={(e) => { e.preventDefault(); submit(); }}
           className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-5"
         >
           <div className="space-y-1.5">
@@ -88,6 +98,35 @@ export default function RuleEditor() {
             <p className="text-sm text-red-400 text-center">Failed to save. Please try again.</p>
           )}
         </form>
+
+        {/* Rules table */}
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-800">
+            <h2 className="text-sm font-semibold text-slate-200">Existing Rules</h2>
+          </div>
+
+          {rules.length === 0 ? (
+            <p className="px-6 py-8 text-sm text-slate-500 text-center">No rules exist.</p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-800 text-slate-400 text-xs uppercase tracking-wide">
+                  <th className="px-6 py-3 text-left font-medium">Name</th>
+                  <th className="px-6 py-3 text-left font-medium">Target Directory</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rules.map((rule) => (
+                  <tr key={rule.id} className="border-b border-slate-800/50 last:border-0 hover:bg-slate-800/30 transition-colors">
+                    <td className="px-6 py-3 text-slate-200 font-medium">{rule.name}</td>
+                    <td className="px-6 py-3 text-slate-400 font-mono">{rule.targetDirectory || <span className="text-slate-600">—</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
       </div>
     </div>
   );

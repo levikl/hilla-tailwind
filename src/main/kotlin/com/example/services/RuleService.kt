@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service
 @AnonymousAllowed
 @Service
 class RuleService(private val ruleRepository: MediaRuleRepository) {
+    fun getRules(): List<MediaRule> = ruleRepository.findAll()
+
     fun saveRule(rule: MediaRule): MediaRule {
         return ruleRepository.save(rule)
     }
