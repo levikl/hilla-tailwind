@@ -39,3 +39,15 @@ out/
 
 ### Kotlin ###
 .kotlin
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# vaadin / hilla
+vite.generated.ts
+frontend/generated/
+src/main/frontend/generated/
+src/main/bundles/
+*.css.json

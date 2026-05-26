@@ -25,6 +25,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
 	developmentOnly("com.vaadin:vaadin-dev")
 	implementation("com.vaadin:vaadin-spring-boot-starter")
+	implementation("com.vaadin:hilla-spring-boot-starter")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("tools.jackson.module:jackson-module-kotlin")
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
@@ -36,6 +37,10 @@ dependencyManagement {
 	imports {
 		mavenBom("com.vaadin:vaadin-bom:${property("vaadinVersion")}")
 	}
+}
+
+vaadin {
+	javaSourceFolder = file("src/main/kotlin")
 }
 
 kotlin {
