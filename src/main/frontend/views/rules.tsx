@@ -102,7 +102,7 @@ export default function RuleEditor() {
         {/* Rules table */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-800">
-            <h2 className="text-sm font-semibold text-slate-200">Existing Rules</h2>
+            <h2 className="text-sm font-semibold !text-slate-200">Existing Rules</h2>
           </div>
 
           {rules.length === 0 ? (

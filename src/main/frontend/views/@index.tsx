@@ -19,7 +19,7 @@ export default function IndexView() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-slate-950 text-slate-100 font-sans">
       <div className="w-full max-w-md p-8 bg-slate-900 rounded-2xl shadow-2xl border border-slate-800">
         {/* Header Section */}
-        <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400 mb-2">
+        <h1 className="text-3xl font-extrabold !text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400 mb-2">
           Media Sync
         </h1>
         <p className="text-slate-400 text-sm mb-8">
@@ -42,7 +42,7 @@ export default function IndexView() {
         {/* Navigation Example */}
         <div className="mt-8 pt-6 border-t border-slate-800">
           <a
-            href="/RuleEditor"
+            href="/rules"
             className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
           >
             → Go to Rule Editor
