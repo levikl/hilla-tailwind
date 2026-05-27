@@ -6,7 +6,7 @@ export default defineConfig({
     baseURL: "http://localhost:8080",
   },
   webServer: {
-    command: "./gradlew bootRun",
+    command: "./gradlew bootRun --args='--vaadin.launch-browser=false'",
     url: "http://localhost:8080",
     timeout: 120_000,
     reuseExistingServer: false,

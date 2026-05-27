@@ -1,0 +1,28 @@
+name: test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: sudo systemctl start postgresql.service
+      - run: sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
+      - uses: actions/checkout@v6
+      - uses: jdx/mise-action@v4
+        with:
+          cache: true
+      - uses: gradle/actions/setup-gradle@v4
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium > e2e_install.log 2>&1 &
+      - run: ./gradlew test
+      - run: npm test
+      - run: npm run test:e2e
+      - run: npm run typecheck
+      - name: print background logs on failure
+        if: failure()
+        run: cat e2e_install.log
