@@ -6,7 +6,10 @@ import MediaRuleModel from "Frontend/generated/com/example/models/MediaRuleModel
 
 export default function RuleEditor() {
   const [rules, setRules] = useState<MediaRule[]>([]);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [selectedRule, setSelectedRule] = useState<MediaRule | null>(null);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error" | "deleting" | "deleted">("idle");
+
+  const isEditing = selectedRule != null;
 
   async function loadRules() {
     const result = await RuleService.getRules();
@@ -15,13 +18,14 @@ export default function RuleEditor() {
 
   useEffect(() => { loadRules(); }, []);
 
-  const { field, model, submit, reset } = useForm(MediaRuleModel, {
+  const { field, model, submit, reset, read } = useForm(MediaRuleModel, {
     onSubmit: async (rule) => {
       setSaveStatus("saving");
       try {
         await RuleService.saveRule(rule);
         setSaveStatus("saved");
         reset();
+        setSelectedRule(null);
         await loadRules();
         setTimeout(() => setSaveStatus("idle"), 3000);
       } catch {
@@ -32,16 +36,54 @@ export default function RuleEditor() {
 
   const nameState = useFormPart(model.name);
 
+  function handleView(rule: MediaRule) {
+    setSelectedRule(rule);
+    read(rule);
+    setSaveStatus("idle");
+  }
+
+  function handleNew() {
+    setSelectedRule(null);
+    reset();
+    setSaveStatus("idle");
+  }
+
+  async function handleDelete() {
+    if (!selectedRule?.id) return;
+    setSaveStatus("deleting");
+    try {
+      await RuleService.deleteRule(selectedRule.id);
+      setSaveStatus("deleted");
+      reset();
+      setSelectedRule(null);
+      await loadRules();
+      setTimeout(() => setSaveStatus("idle"), 3000);
+    } catch {
+      setSaveStatus("error");
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 p-8">
       <div className="max-w-2xl mx-auto space-y-8">
 
-        <div>
-          <a href="/" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">
-            ← Back
-          </a>
-          <h1 className="mt-4 text-2xl font-bold text-slate-100">Rule Editor</h1>
-          <p className="text-slate-400 text-sm mt-1">Define media sync rules</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <a href="/" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">
+              ← Back
+            </a>
+            <h1 className="mt-4 text-2xl font-bold !text-slate-100">Rule Editor</h1>
+            <p className="text-slate-400 text-sm mt-1">Define media sync rules</p>
+          </div>
+          {isEditing && (
+            <button
+              type="button"
+              onClick={handleNew}
+              className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+            >
+              + New Rule
+            </button>
+          )}
         </div>
 
         {/* Form */}
@@ -49,6 +91,10 @@ export default function RuleEditor() {
           onSubmit={(e) => { e.preventDefault(); submit(); }}
           className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-5"
         >
+          <h2 className="text-sm font-semibold !text-slate-200">
+            {isEditing ? "Edit Rule" : "New Rule"}
+          </h2>
+
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-slate-300">Rule Name</label>
             <input
@@ -80,22 +126,36 @@ export default function RuleEditor() {
               disabled={saveStatus === "saving"}
               className="flex-1 py-2 px-4 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors"
             >
-              {saveStatus === "saving" ? "Saving…" : "Save Rule"}
+              {saveStatus === "saving" ? "Saving…" : isEditing ? "Update Rule" : "Save Rule"}
             </button>
-            <button
-              type="button"
-              onClick={reset}
-              className="py-2 px-4 rounded-lg border border-slate-700 hover:border-slate-500 text-slate-400 hover:text-slate-200 text-sm transition-colors"
-            >
-              Reset
-            </button>
+            {isEditing ? (
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={saveStatus === "deleting"}
+                className="py-2 px-4 rounded-lg border border-red-800 hover:border-red-600 text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm transition-colors"
+              >
+                {saveStatus === "deleting" ? "Deleting…" : "Delete"}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={reset}
+                className="py-2 px-4 rounded-lg border border-slate-700 hover:border-slate-500 text-slate-400 hover:text-slate-200 text-sm transition-colors"
+              >
+                Reset
+              </button>
+            )}
           </div>
 
           {saveStatus === "saved" && (
             <p className="text-sm text-emerald-400 text-center">Rule saved successfully.</p>
           )}
+          {saveStatus === "deleted" && (
+            <p className="text-sm text-emerald-400 text-center">Rule deleted.</p>
+          )}
           {saveStatus === "error" && (
-            <p className="text-sm text-red-400 text-center">Failed to save. Please try again.</p>
+            <p className="text-sm text-red-400 text-center">Operation failed. Please try again.</p>
           )}
         </form>
 
@@ -113,15 +173,39 @@ export default function RuleEditor() {
                 <tr className="border-b border-slate-800 text-slate-400 text-xs uppercase tracking-wide">
                   <th className="px-6 py-3 text-left font-medium">Name</th>
                   <th className="px-6 py-3 text-left font-medium">Target Directory</th>
+                  <th className="px-6 py-3 text-right font-medium"></th>
                 </tr>
               </thead>
               <tbody>
-                {rules.map((rule) => (
-                  <tr key={rule.id} className="border-b border-slate-800/50 last:border-0 hover:bg-slate-800/30 transition-colors">
-                    <td className="px-6 py-3 text-slate-200 font-medium">{rule.name}</td>
-                    <td className="px-6 py-3 text-slate-400 font-mono">{rule.targetDirectory || <span className="text-slate-600">—</span>}</td>
-                  </tr>
-                ))}
+                {rules.map((rule) => {
+                  const isActive = selectedRule?.id === rule.id;
+                  return (
+                    <tr
+                      key={rule.id}
+                      className={`border-b border-slate-800/50 last:border-0 transition-colors ${
+                        isActive ? "bg-slate-800/60" : "hover:bg-slate-800/30"
+                      }`}
+                    >
+                      <td className="px-6 py-3 text-slate-200 font-medium">{rule.name}</td>
+                      <td className="px-6 py-3 text-slate-400 font-mono">
+                        {rule.targetDirectory || <span className="text-slate-600">—</span>}
+                      </td>
+                      <td className="px-6 py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => isActive ? handleNew() : handleView(rule)}
+                          className={`text-xs px-3 py-1 rounded-md border transition-colors ${
+                            isActive
+                              ? "border-blue-600 text-blue-400 bg-blue-950/40"
+                              : "border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200"
+                          }`}
+                        >
+                          {isActive ? "Editing" : "Edit"}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}

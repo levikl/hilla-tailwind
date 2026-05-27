@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service
 class RuleService(private val ruleRepository: MediaRuleRepository) {
     fun getRules(): List<MediaRule> = ruleRepository.findAll()
 
-    fun saveRule(rule: MediaRule): MediaRule {
-        return ruleRepository.save(rule)
-    }
+    fun saveRule(rule: MediaRule): MediaRule = ruleRepository.save(rule)
+
+    fun deleteRule(id: Long) = ruleRepository.deleteById(id)
 }
