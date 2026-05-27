@@ -1,22 +1,24 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useLoaderData, useRevalidator } from "react-router";
 import { useForm, useFormPart } from "@vaadin/hilla-react-form";
 import { RuleService } from "Frontend/generated/endpoints";
 import type MediaRule from "Frontend/generated/com/example/models/MediaRule";
 import MediaRuleModel from "Frontend/generated/com/example/models/MediaRuleModel";
 
-export default function RuleEditor() {
-  const [rules, setRules] = useState<MediaRule[]>([]);
+export async function loader() {
+  const result = await RuleService.getRules();
+  return result.filter((r) => r != null);
+}
+
+export default function RulesView() {
+  const rules = useLoaderData<typeof loader>();
+  const { revalidate } = useRevalidator();
   const [selectedRule, setSelectedRule] = useState<MediaRule | null>(null);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error" | "deleting" | "deleted">("idle");
+  const [saveStatus, setSaveStatus] = useState<
+    "idle" | "saving" | "saved" | "error" | "deleting" | "deleted"
+  >("idle");
 
   const isEditing = selectedRule != null;
-
-  async function loadRules() {
-    const result = await RuleService.getRules();
-    setRules(result.filter((r): r is MediaRule => r != null));
-  }
-
-  useEffect(() => { loadRules(); }, []);
 
   const { field, model, submit, reset, read } = useForm(MediaRuleModel, {
     onSubmit: async (rule) => {
@@ -26,7 +28,7 @@ export default function RuleEditor() {
         setSaveStatus("saved");
         reset();
         setSelectedRule(null);
-        await loadRules();
+        revalidate();
         setTimeout(() => setSaveStatus("idle"), 3000);
       } catch {
         setSaveStatus("error");
@@ -36,7 +38,7 @@ export default function RuleEditor() {
 
   const nameState = useFormPart(model.name);
 
-  function handleView(rule: MediaRule) {
+  function handleEdit(rule: MediaRule) {
     setSelectedRule(rule);
     read(rule);
     setSaveStatus("idle");
@@ -56,7 +58,7 @@ export default function RuleEditor() {
       setSaveStatus("deleted");
       reset();
       setSelectedRule(null);
-      await loadRules();
+      revalidate();
       setTimeout(() => setSaveStatus("idle"), 3000);
     } catch {
       setSaveStatus("error");
@@ -66,14 +68,20 @@ export default function RuleEditor() {
   return (
     <div className="min-h-screen bg-slate-950 p-8">
       <div className="max-w-2xl mx-auto space-y-8">
-
         <div className="flex items-center justify-between">
           <div>
-            <a href="/" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">
+            <a
+              href="/"
+              className="text-sm text-slate-500 hover:text-slate-300 transition-colors"
+            >
               ← Back
             </a>
-            <h1 className="mt-4 text-2xl font-bold !text-slate-100">Rule Editor</h1>
-            <p className="text-slate-400 text-sm mt-1">Define media sync rules</p>
+            <h1 className="mt-4 text-2xl font-bold !text-slate-100">
+              Rule Editor
+            </h1>
+            <p className="text-slate-400 text-sm mt-1">
+              Define media sync rules
+            </p>
           </div>
           {isEditing && (
             <button
@@ -88,7 +96,10 @@ export default function RuleEditor() {
 
         {/* Form */}
         <form
-          onSubmit={(e) => { e.preventDefault(); submit(); }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            submit();
+          }}
           className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-5"
         >
           <h2 className="text-sm font-semibold !text-slate-200">
@@ -96,7 +107,9 @@ export default function RuleEditor() {
           </h2>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-300">Rule Name</label>
+            <label className="text-sm font-medium text-slate-300">
+              Rule Name
+            </label>
             <input
               {...field(model.name)}
               placeholder="e.g. Movies → NAS"
@@ -107,12 +120,16 @@ export default function RuleEditor() {
               }`}
             />
             {nameState.invalid && (
-              <p className="text-xs text-red-400">{nameState.ownErrors[0]?.message}</p>
+              <p className="text-xs text-red-400">
+                {nameState.ownErrors[0]?.message}
+              </p>
             )}
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-300">Target Directory</label>
+            <label className="text-sm font-medium text-slate-300">
+              Target Directory
+            </label>
             <input
               {...field(model.targetDirectory)}
               placeholder="e.g. /mnt/nas/movies"
@@ -126,7 +143,11 @@ export default function RuleEditor() {
               disabled={saveStatus === "saving"}
               className="flex-1 py-2 px-4 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors"
             >
-              {saveStatus === "saving" ? "Saving…" : isEditing ? "Update Rule" : "Save Rule"}
+              {saveStatus === "saving"
+                ? "Saving…"
+                : isEditing
+                  ? "Update Rule"
+                  : "Save Rule"}
             </button>
             {isEditing ? (
               <button
@@ -149,30 +170,42 @@ export default function RuleEditor() {
           </div>
 
           {saveStatus === "saved" && (
-            <p className="text-sm text-emerald-400 text-center">Rule saved successfully.</p>
+            <p className="text-sm text-emerald-400 text-center">
+              Rule saved successfully.
+            </p>
           )}
           {saveStatus === "deleted" && (
-            <p className="text-sm text-emerald-400 text-center">Rule deleted.</p>
+            <p className="text-sm text-emerald-400 text-center">
+              Rule deleted.
+            </p>
           )}
           {saveStatus === "error" && (
-            <p className="text-sm text-red-400 text-center">Operation failed. Please try again.</p>
+            <p className="text-sm text-red-400 text-center">
+              Operation failed. Please try again.
+            </p>
           )}
         </form>
 
         {/* Rules table */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-800">
-            <h2 className="text-sm font-semibold !text-slate-200">Existing Rules</h2>
+            <h2 className="text-sm font-semibold !text-slate-200">
+              Existing Rules
+            </h2>
           </div>
 
           {rules.length === 0 ? (
-            <p className="px-6 py-8 text-sm text-slate-500 text-center">No rules exist.</p>
+            <p className="px-6 py-8 text-sm text-slate-500 text-center">
+              No rules exist.
+            </p>
           ) : (
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-800 text-slate-400 text-xs uppercase tracking-wide">
                   <th className="px-6 py-3 text-left font-medium">Name</th>
-                  <th className="px-6 py-3 text-left font-medium">Target Directory</th>
+                  <th className="px-6 py-3 text-left font-medium">
+                    Target Directory
+                  </th>
                   <th className="px-6 py-3 text-right font-medium"></th>
                 </tr>
               </thead>
@@ -186,14 +219,20 @@ export default function RuleEditor() {
                         isActive ? "bg-slate-800/60" : "hover:bg-slate-800/30"
                       }`}
                     >
-                      <td className="px-6 py-3 text-slate-200 font-medium">{rule.name}</td>
+                      <td className="px-6 py-3 text-slate-200 font-medium">
+                        {rule.name}
+                      </td>
                       <td className="px-6 py-3 text-slate-400 font-mono">
-                        {rule.targetDirectory || <span className="text-slate-600">—</span>}
+                        {rule.targetDirectory || (
+                          <span className="text-slate-600">—</span>
+                        )}
                       </td>
                       <td className="px-6 py-3 text-right">
                         <button
                           type="button"
-                          onClick={() => isActive ? handleNew() : handleView(rule)}
+                          onClick={() =>
+                            isActive ? handleNew() : handleEdit(rule)
+                          }
                           className={`text-xs px-3 py-1 rounded-md border transition-colors ${
                             isActive
                               ? "border-blue-600 text-blue-400 bg-blue-950/40"
@@ -210,7 +249,6 @@ export default function RuleEditor() {
             </table>
           )}
         </div>
-
       </div>
     </div>
   );

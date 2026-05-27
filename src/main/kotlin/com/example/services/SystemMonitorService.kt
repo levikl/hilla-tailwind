@@ -8,9 +8,6 @@ import org.springframework.stereotype.Service
 @AnonymousAllowed // Bypasses Spring Security for this endpoint
 @Service
 class SystemMonitorService {
-
     // Hilla turns this into a TypeScript function returning a Promise<string>
-    fun getStatus(): String {
-        return "System is Nominal. Kotlin is running."
-    }
+    fun getStatus(): String = "System is Nominal. Kotlin is running."
 }

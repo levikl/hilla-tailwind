@@ -1,146 +1,182 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
-import type { Mock } from "vitest";
-import RuleEditor from "./rules";
+import RulesView, { loader } from "./rules";
+
+const { useForm, useFormPart, useLoaderData, useRevalidator, RuleService } =
+  vi.hoisted(() => ({
+    useForm: vi.fn(),
+    useFormPart: vi.fn(),
+    useLoaderData: vi.fn(),
+    useRevalidator: vi.fn(),
+    RuleService: {
+      getRules: vi.fn(),
+      saveRule: vi.fn(),
+      deleteRule: vi.fn(),
+    },
+  }));
 
 vi.mock("@vaadin/hilla-react-form", () => ({
-  useForm: vi.fn(),
-  useFormPart: vi.fn(),
+  useForm,
+  useFormPart,
 }));
 
 vi.mock("Frontend/generated/endpoints", () => ({
-  RuleService: {
-    getRules: vi.fn(),
-    saveRule: vi.fn(),
-    deleteRule: vi.fn(),
-  },
+  RuleService,
 }));
 
 vi.mock("Frontend/generated/com/example/models/MediaRuleModel", () => ({
   default: class MediaRuleModel {},
 }));
 
-import { useForm, useFormPart } from "@vaadin/hilla-react-form";
-import { RuleService } from "Frontend/generated/endpoints";
+vi.mock("react-router", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("react-router")>();
+  return { ...actual, useLoaderData, useRevalidator };
+});
 
 const mockModel = { name: {}, targetDirectory: {}, id: {} };
 
 function makeFormMock({ read = vi.fn(), reset = vi.fn() } = {}) {
-  (useForm as Mock).mockReturnValue({
+  useForm.mockReturnValue({
     field: vi.fn().mockReturnValue({}),
     model: mockModel,
     submit: vi.fn(),
     reset,
     read,
   });
-  (useFormPart as Mock).mockReturnValue({ invalid: false, ownErrors: [] });
+  useFormPart.mockReturnValue({ invalid: false, ownErrors: [] });
 }
 
-describe("RuleEditor", () => {
+describe("loader", () => {
+  it("fetches rules and filters out null entries", async () => {
+    RuleService.getRules.mockResolvedValue([
+      { id: 1, name: "Movies", targetDirectory: "/movies" },
+      null,
+      { id: 2, name: "TV", targetDirectory: "/tv" },
+    ]);
+    const result = await loader();
+    expect(result).toHaveLength(2);
+    expect(result[0].name).toBe("Movies");
+    expect(result[1].name).toBe("TV");
+  });
+});
+
+describe("RulesView", () => {
+  const mockRevalidate = vi.fn();
+
   beforeEach(() => {
     vi.clearAllMocks();
-    (RuleService.getRules as Mock).mockResolvedValue([]);
+    useLoaderData.mockReturnValue([]);
+    useRevalidator.mockReturnValue({
+      revalidate: mockRevalidate,
+      state: "idle",
+    });
     makeFormMock();
   });
 
-  it('shows "No rules exist." when the list is empty', async () => {
-    render(<RuleEditor />);
-    expect(await screen.findByText("No rules exist.")).toBeInTheDocument();
+  it('shows "No rules exist." when loader data is empty', () => {
+    render(<RulesView />);
+    expect(screen.getByText("No rules exist.")).toBeInTheDocument();
   });
 
-  it("renders rule rows when rules are returned", async () => {
-    (RuleService.getRules as Mock).mockResolvedValue([
+  it("renders rule rows from loader data", () => {
+    useLoaderData.mockReturnValue([
       { id: 1, name: "Movies", targetDirectory: "/mnt/nas/movies" },
       { id: 2, name: "TV Shows", targetDirectory: "/mnt/nas/tv" },
     ]);
-    render(<RuleEditor />);
-    expect(await screen.findByText("Movies")).toBeInTheDocument();
+    render(<RulesView />);
+    expect(screen.getByText("Movies")).toBeInTheDocument();
     expect(screen.getByText("/mnt/nas/movies")).toBeInTheDocument();
     expect(screen.getByText("TV Shows")).toBeInTheDocument();
   });
 
   it('shows "New Rule" heading, "Save Rule" and Reset buttons by default', () => {
-    render(<RuleEditor />);
+    render(<RulesView />);
     expect(screen.getByText("New Rule")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Save Rule" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Save Rule" }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Reset" })).toBeInTheDocument();
     expect(screen.queryByText("+ New Rule")).not.toBeInTheDocument();
   });
 
-  it('switches to edit mode when "Edit" is clicked', async () => {
-    (RuleService.getRules as Mock).mockResolvedValue([
+  it('switches to edit mode when "Edit" is clicked', () => {
+    useLoaderData.mockReturnValue([
       { id: 1, name: "Movies", targetDirectory: "/mnt/nas/movies" },
     ]);
-    render(<RuleEditor />);
-    fireEvent.click(await screen.findByRole("button", { name: "Edit" }));
+    render(<RulesView />);
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
 
     expect(screen.getByText("Edit Rule")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Update Rule" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Update Rule" }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Reset" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByText("+ New Rule")).toBeInTheDocument();
   });
 
-  it('calls read() with the selected rule when "Edit" is clicked', async () => {
+  it('calls read() with the selected rule when "Edit" is clicked', () => {
     const rule = { id: 1, name: "Movies", targetDirectory: "/mnt/nas/movies" };
-    (RuleService.getRules as Mock).mockResolvedValue([rule]);
+    useLoaderData.mockReturnValue([rule]);
     const mockRead = vi.fn();
     makeFormMock({ read: mockRead });
 
-    render(<RuleEditor />);
-    fireEvent.click(await screen.findByRole("button", { name: "Edit" }));
+    render(<RulesView />);
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
 
     expect(mockRead).toHaveBeenCalledWith(rule);
   });
 
-  it('returns to create mode when "Editing" button is clicked', async () => {
-    (RuleService.getRules as Mock).mockResolvedValue([
+  it('returns to create mode when "Editing" button is clicked', () => {
+    useLoaderData.mockReturnValue([
       { id: 1, name: "Movies", targetDirectory: "/mnt/nas/movies" },
     ]);
     const mockReset = vi.fn();
     makeFormMock({ reset: mockReset });
 
-    render(<RuleEditor />);
-    fireEvent.click(await screen.findByRole("button", { name: "Edit" }));
+    render(<RulesView />);
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     fireEvent.click(screen.getByRole("button", { name: "Editing" }));
 
     expect(screen.getByText("New Rule")).toBeInTheDocument();
     expect(mockReset).toHaveBeenCalled();
   });
 
-  it('returns to create mode when "+ New Rule" is clicked', async () => {
-    (RuleService.getRules as Mock).mockResolvedValue([
+  it('returns to create mode when "+ New Rule" is clicked', () => {
+    useLoaderData.mockReturnValue([
       { id: 1, name: "Movies", targetDirectory: "/mnt/nas/movies" },
     ]);
-    render(<RuleEditor />);
-    fireEvent.click(await screen.findByRole("button", { name: "Edit" }));
+    render(<RulesView />);
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     fireEvent.click(screen.getByText("+ New Rule"));
 
     expect(screen.getByText("New Rule")).toBeInTheDocument();
     expect(screen.queryByText("+ New Rule")).not.toBeInTheDocument();
   });
 
-  it("calls deleteRule with the rule id and reloads on Delete click", async () => {
-    const rule = { id: 7, name: "Movies", targetDirectory: "/mnt/nas/movies" };
-    (RuleService.getRules as Mock).mockResolvedValue([rule]);
-    (RuleService.deleteRule as Mock).mockResolvedValue(undefined);
+  it("calls deleteRule with the rule id and triggers revalidation", async () => {
+    useLoaderData.mockReturnValue([
+      { id: 7, name: "Movies", targetDirectory: "/mnt/nas/movies" },
+    ]);
+    RuleService.deleteRule.mockResolvedValue(undefined);
 
-    render(<RuleEditor />);
-    fireEvent.click(await screen.findByRole("button", { name: "Edit" }));
+    render(<RulesView />);
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
 
     await waitFor(() => expect(RuleService.deleteRule).toHaveBeenCalledWith(7));
-    await waitFor(() => expect(RuleService.getRules).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(mockRevalidate).toHaveBeenCalled());
   });
 
-  it('shows "Editing" state on the active row', async () => {
-    (RuleService.getRules as Mock).mockResolvedValue([
+  it('shows "Editing" state on the active row and "Edit" on others', () => {
+    useLoaderData.mockReturnValue([
       { id: 1, name: "Movies", targetDirectory: "/mnt/nas/movies" },
       { id: 2, name: "TV Shows", targetDirectory: "/mnt/nas/tv" },
     ]);
-    render(<RuleEditor />);
-    const editBtns = await screen.findAllByRole("button", { name: "Edit" });
-    fireEvent.click(editBtns[0]);
+    render(<RulesView />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Edit" })[0]);
 
     expect(screen.getByRole("button", { name: "Editing" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
