@@ -52,3 +52,6 @@ frontend/generated/
 src/main/frontend/generated/
 src/main/bundles/
 *.css.json
+
+# playwright
+test-results
