@@ -7,7 +7,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:create": "PGPASSWORD=postgres createdb -U postgres -h localhost hilla_tailwind_dev 2>/dev/null || true",
+    "db:drop": "PGPASSWORD=postgres dropdb -U postgres -h localhost --if-exists hilla_tailwind_dev",
+    "db:migrate": "./gradlew flywayMigrate"
   },
   "keywords": [ ],
   "author": "",

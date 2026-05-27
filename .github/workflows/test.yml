@@ -19,6 +19,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - run: npm ci
       - run: npx playwright install --with-deps chromium > e2e_install.log 2>&1 &
+      - run: npm run db:create
       - run: ./gradlew test
       - run: npm test
       - run: npm run test:e2e

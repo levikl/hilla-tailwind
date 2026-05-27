@@ -1,3 +1,11 @@
+buildscript {
+	repositories { mavenCentral() }
+	dependencies {
+		classpath("org.flywaydb:flyway-database-postgresql:11.14.1")
+		classpath("org.postgresql:postgresql:42.7.10")
+	}
+}
+
 plugins {
 	kotlin("jvm") version "2.2.21"
 	kotlin("plugin.spring") version "2.2.21"
@@ -5,6 +13,13 @@ plugins {
 	id("org.springframework.boot") version "4.0.6"
 	id("io.spring.dependency-management") version "1.1.7"
 	id("com.vaadin") version "25.1.6"
+	id("org.flywaydb.flyway") version "11.14.1"
+}
+
+flyway {
+	url = "jdbc:postgresql://localhost:5432/hilla_tailwind_dev"
+	user = "postgres"
+	password = "postgres"
 }
 
 group = "com.example"
