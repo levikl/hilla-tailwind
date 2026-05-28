@@ -5,23 +5,21 @@ import fileRoutes from "Frontend/generated/file-routes.js";
 export const { router, routes } = new RouterConfigurationBuilder()
   .withFileRoutes(fileRoutes)
   .withReactRoutes([
-    loaderRoute({ path: "", importPath: "@index" }),
-    loaderRoute({ path: "rules" }),
+    {
+      path: "",
+      lazy: async () => {
+        const { default: Component, loader } = await import("./views/@index");
+        return { Component, loader };
+      },
+    },
+    {
+      path: "rules",
+      lazy: async () => {
+        const { default: Component, loader } = await import("./views/rules");
+        return { Component, loader };
+      },
+    },
   ])
   .withFallback(Flow)
   .protect()
   .build();
-
-type LoaderRouteProps = { path: string; importPath?: string };
-
-function loaderRoute({ path, importPath = path }: LoaderRouteProps) {
-  return {
-    path,
-    lazy: async () => {
-      const { default: Component, loader } = await import(
-        `./views/${importPath}`
-      );
-      return { Component, loader };
-    },
-  };
-}
