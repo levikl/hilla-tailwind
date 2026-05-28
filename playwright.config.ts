@@ -12,7 +12,7 @@ export default defineConfig({
     command: "./gradlew bootRun --args='--vaadin.launch-browser=false'",
     url: "http://localhost:8080",
     timeout: 120_000,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
   },
   projects: [
     {

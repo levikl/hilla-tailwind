@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "vitest run",
+    "test:ci": "run-s test:server test:client build:client typecheck test:e2e",
+    "test:client": "vitest run",
+    "test:server": "./gradlew test",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit",

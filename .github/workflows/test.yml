@@ -20,11 +20,7 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium > e2e_install.log 2>&1 &
       - run: npm run db:create
-      - run: ./gradlew test
-      - run: npm test
-      - run: npm run build:client
-      - run: npm run test:e2e
-      - run: npm run typecheck
+      - run: npm run test:ci
       - name: print background logs on failure
         if: failure()
         run: cat e2e_install.log
