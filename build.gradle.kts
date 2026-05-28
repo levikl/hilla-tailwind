@@ -1,7 +1,7 @@
 buildscript {
 	repositories { mavenCentral() }
 	dependencies {
-		classpath("org.flywaydb:flyway-database-postgresql:11.14.1")
+		classpath("org.flywaydb:flyway-database-postgresql:12.6.2")
 		classpath("org.postgresql:postgresql:42.7.10")
 	}
 }
@@ -13,7 +13,7 @@ plugins {
 	id("org.springframework.boot") version "4.0.6"
 	id("io.spring.dependency-management") version "1.1.7"
 	id("com.vaadin") version "25.1.6"
-	id("org.flywaydb.flyway") version "11.14.1"
+	id("org.flywaydb.flyway") version "12.6.2"
 }
 
 flyway {
