@@ -11,6 +11,8 @@
     "db:create": "PGPASSWORD=postgres createdb -U postgres -h localhost hilla_tailwind_dev 2>/dev/null || true",
     "db:drop": "PGPASSWORD=postgres dropdb -U postgres -h localhost --if-exists hilla_tailwind_dev",
     "db:migrate": "./gradlew flywayMigrate",
+    "db:setup": "run-s db:create db:migrate",
+    "db:reset": "run-s db:drop db:create db:migrate",
     "build:client": "./gradlew vaadinBuildFrontend"
   },
   "keywords": [ ],
@@ -45,6 +47,7 @@
     "@vitejs/plugin-react": "5.1.4",
     "jsdom": "^29.1.1",
     "magic-string": "0.30.21",
+    "npm-run-all2": "^9.0.1",
     "rollup-plugin-brotli": "3.1.0",
     "rollup-plugin-visualizer": "7.0.1",
     "strip-css-comments": "5.0.0",
@@ -130,7 +133,7 @@
       "vite": "7.3.2",
       "vite-plugin-checker": "0.12.0"
     },
-    "hash": "931cc9d757935496e819f7d7ca712fc1c34b53a941228ec4e5f2c5d06885ae46",
+    "hash": "262f6f8bea12d1cf359a149c7f9528bff6092dd172746270976f274b78e95444",
     "overrides": {
       "@vaadin/a11y-base": "25.1.3",
       "@vaadin/accordion": "25.1.3",
